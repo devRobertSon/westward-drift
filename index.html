@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>인공위성 서편현상 3D 뷰어</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🛰️%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="./css/style.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three.module.min.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="app">
+    <!-- ===== 사이드 컨트롤 패널 ===== -->
+    <aside id="panel">
+      <header class="panel-head">
+        <h1>🛰️ 인공위성 <span>서편현상</span></h1>
+        <p class="subtitle">지구 자전에 의한 지상 궤적의 서쪽 이동</p>
+      </header>
+
+      <div class="controls">
+        <div class="btn-row">
+          <button id="btnPlay" class="btn primary">⏸ 일시정지</button>
+          <button id="btnReset" class="btn">↺ 초기화</button>
+          <button id="btnFit" class="btn">⤢ 화면맞춤</button>
+        </div>
+
+        <fieldset>
+          <legend>위성 프리셋</legend>
+          <div class="btn-row">
+            <button class="btn preset" data-alt="420" data-inc="51.6">ISS</button>
+            <button class="btn preset" data-alt="700" data-inc="98">저궤도(극)</button>
+            <button class="btn preset" data-alt="20200" data-inc="55">GPS(중궤도)</button>
+            <button class="btn preset" data-alt="35786" data-inc="0">정지궤도</button>
+          </div>
+        </fieldset>
+
+        <label class="slider">
+          <span>시뮬레이션 배속 <b id="valSpeed">500×</b></span>
+          <input type="range" id="rngSpeed" min="1" max="3000" step="1" value="500" />
+        </label>
+
+        <label class="slider">
+          <span>궤도 고도 <b id="valAlt">420 km</b></span>
+          <input type="range" id="rngAlt" min="300" max="35786" step="1" value="420" />
+        </label>
+
+        <label class="slider">
+          <span>궤도 경사각 <b id="valInc">51.6°</b></span>
+          <input type="range" id="rngInc" min="0" max="90" step="0.5" value="51.6" />
+        </label>
+
+        <fieldset>
+          <legend>표시 옵션</legend>
+          <label class="chk"><input type="checkbox" id="chkTrack" checked /> 지상 궤적</label>
+          <label class="chk"><input type="checkbox" id="chkOrbit" checked /> 궤도면</label>
+          <label class="chk"><input type="checkbox" id="chkGrid" checked /> 위·경도 격자</label>
+          <label class="chk"><input type="checkbox" id="chkSpin" checked /> 지구 자전</label>
+        </fieldset>
+      </div>
+
+      <!-- ===== 실시간 정보 ===== -->
+      <div class="readout">
+        <div class="ro"><span>궤도 주기</span><b id="roPeriod">—</b></div>
+        <div class="ro"><span>하루 공전 횟수</span><b id="roRevs">—</b></div>
+        <div class="ro highlight"><span>1궤도당 서편 이동</span><b id="roShift">—</b></div>
+        <div class="ro"><span>위성 위치 (위도)</span><b id="roLat">—</b></div>
+        <div class="ro"><span>위성 위치 (경도)</span><b id="roLon">—</b></div>
+        <div class="ro"><span>경과 시간 / 공전 수</span><b id="roTime">—</b></div>
+      </div>
+
+      <details class="explain">
+        <summary>서편현상이란?</summary>
+        <p>인공위성의 궤도면은 우주 공간(관성계)에 대해 거의 <b>고정</b>되어 있습니다.
+        그 아래에서 <b>지구가 서→동으로 자전</b>하기 때문에, 위성이 한 바퀴 도는
+        동안 지구가 동쪽으로 돌아버립니다. 그 결과 다음 궤도의 <b>지상 궤적이
+        앞 궤도보다 서쪽으로</b> 밀려나 보입니다.</p>
+        <p>한 궤도당 서편 이동량 = 360° × (궤도 주기 ÷ 항성일 23시간 56분).</p>
+        <p>고도를 <b>정지궤도(약 35,786 km)</b>로 올리면 주기가 항성일과 같아져
+        서편 이동이 <b>0</b>이 되고, 위성이 한 지점 위에 멈춰 보입니다.
+        아래 2D 지도에서 궤적이 서쪽(왼쪽)으로 계단처럼 밀리는 모습을 확인하세요.</p>
+      </details>
+    </aside>
+
+    <!-- ===== 3D 뷰 ===== -->
+    <main id="stage">
+      <div id="view3d"></div>
+      <div id="map2d-wrap">
+        <div class="map-title">지상 궤적 지도 (경도 −180° → +180°)</div>
+        <canvas id="map2d"></canvas>
+      </div>
+      <div id="hint">마우스 드래그: 회전 · 휠: 확대/축소 · 우클릭 드래그: 이동</div>
+    </main>
+  </div>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

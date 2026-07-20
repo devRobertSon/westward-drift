@@ -1,0 +1,5 @@
+node_modules/
+*.tgz
+_test*.mjs
+_shot*.png
+.DS_Store
