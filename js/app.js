@@ -9,7 +9,8 @@
 //    다음 궤도의 지상 궤적이 앞 궤도보다 서쪽으로 밀려난다(서편현상).
 //  · 1궤도당 서편 이동량 = 360° × (궤도주기 T ÷ 항성일 86164초)
 //  · 좌표계: 장면(scene) = 관성계(ECI). Y축 = 지구 자전축(북극),
-//    적도면 = XZ평면, 동쪽(경도 +) = +Z 방향.
+//    적도면 = XZ평면. (동, 북, 상)이 오른손계가 되도록 동쪽(경도 +) = -Z 방향.
+//    → 지구는 +Y(북극) 둘레로 반시계(서→동)로 자전한다.
 // ============================================================================
 
 import * as THREE from 'three';
@@ -138,13 +139,13 @@ scene.add(radiusLine);
 // ============================================================================
 //  기하 헬퍼
 // ============================================================================
-// Earth-fixed 경도(λ)·위도(φ) → 단위벡터 (동쪽 = +Z)
+// Earth-fixed 경도(λ)·위도(φ) → 단위벡터 (동쪽 = -Z, 오른손계)
 function llToVec(lonDeg, latDeg, r = 1) {
   const la = lonDeg * RAD, ph = latDeg * RAD;
   return new THREE.Vector3(
     r * Math.cos(ph) * Math.cos(la),
     r * Math.sin(ph),
-    r * Math.cos(ph) * Math.sin(la),
+    -r * Math.cos(ph) * Math.sin(la),
   );
 }
 
@@ -215,7 +216,7 @@ function rebuildOrbitLine() {
     pts.push(new THREE.Vector3(
       a * Math.cos(ur),
       a * Math.sin(ur) * Math.sin(i),
-      a * Math.sin(ur) * Math.cos(i),
+      -a * Math.sin(ur) * Math.cos(i),   // 동쪽 = -Z (prograde, 순행)
     ));
   }
   orbitLine = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts),
@@ -258,10 +259,10 @@ function updateSatellite() {
   const u = state.n * state.simTime;                 // 위도인수(argument of latitude)
   const thetaE = state.spin ? OMEGA_E * state.simTime : 0;  // 지구 자전각
 
-  // 관성계 위성 좌표
+  // 관성계 위성 좌표 (동쪽 = -Z 이므로 z에 음부호 → 순행 궤도)
   const x = a * Math.cos(u);
   const y = a * Math.sin(u) * Math.sin(i);
-  const z = a * Math.sin(u) * Math.cos(i);
+  const z = -a * Math.sin(u) * Math.cos(i);
   satellite.position.set(x, y, z);
   satLabel.position.set(x, y + 0.12 * a, z);
 
@@ -269,8 +270,8 @@ function updateSatellite() {
   radiusGeom.attributes.position.setXYZ(1, x, y, z);
   radiusGeom.attributes.position.needsUpdate = true;
 
-  // 서브위성점 (관성 경도 φ_i, 위도 ψ)
-  const phiI = Math.atan2(z, x);                     // 적도면 투영 방위각
+  // 서브위성점 (관성 경도 φ_i, 위도 ψ). 동쪽=-Z 이므로 경도 = atan2(-z, x)
+  const phiI = Math.atan2(-z, x);                    // 적도면 투영 방위각(동쪽 +)
   const lat = Math.asin(Math.max(-1, Math.min(1, y / a))) * DEG;
   let lonEF = (phiI - thetaE) * DEG;                 // Earth-fixed 경도
   lonEF = ((lonEF + 180) % 360 + 360) % 360 - 180;   // [-180,180]
@@ -406,11 +407,13 @@ function animate(now) {
 
   if (state.playing) state.simTime += dtReal * state.speed;
 
-  // 지구는 서→동(동쪽)으로 자전한다. earthGroup의 자식으로 붙는 지상궤적 점이
-  // 위성 바로 아래에 정확히 찍히려면, 그룹 회전각은 경도 계산에 쓰는 thetaE의
-  // '부호 반대'여야 한다 (렌더 시 R_y(-thetaE)·(경도 phiI-thetaE) = 위성 경도 phiI).
+  // 지구는 +Y(북극) 둘레로 서→동(동쪽=-Z)으로 자전한다.
+  // 오른손계 지리좌표(동=-Z)에서 rotation.y = +thetaE 이면
+  //  ① 자전축 각속도가 +Y(북극) 방향 → 실제와 같은 서→동 자전
+  //  ② earthGroup 자식인 지상궤적/마커가 위성 바로 아래에 정확히 위치
+  //     (R_y(+thetaE)·(경도 phiI-thetaE) = 위성 경도 phiI)
   const thetaE = state.spin ? OMEGA_E * state.simTime : 0;
-  earthGroup.rotation.y = -thetaE;
+  earthGroup.rotation.y = thetaE;
 
   updateSatellite();
   controls.update();
