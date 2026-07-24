@@ -406,8 +406,11 @@ function animate(now) {
 
   if (state.playing) state.simTime += dtReal * state.speed;
 
+  // 지구는 서→동(동쪽)으로 자전한다. earthGroup의 자식으로 붙는 지상궤적 점이
+  // 위성 바로 아래에 정확히 찍히려면, 그룹 회전각은 경도 계산에 쓰는 thetaE의
+  // '부호 반대'여야 한다 (렌더 시 R_y(-thetaE)·(경도 phiI-thetaE) = 위성 경도 phiI).
   const thetaE = state.spin ? OMEGA_E * state.simTime : 0;
-  earthGroup.rotation.y = thetaE;
+  earthGroup.rotation.y = -thetaE;
 
   updateSatellite();
   controls.update();
